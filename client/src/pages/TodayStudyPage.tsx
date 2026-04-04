@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useStudy } from '../hooks/useStudy';
 import StudyCard from '../components/StudyCard';
@@ -128,59 +127,79 @@ const RetryButton = styled.button`
   }
 `;
 
-const LoadingSpinner = styled.div`
-  width: 32px;
-  height: 32px;
-  border: 3px solid ${({ theme }) => theme.colors.borderLight};
-  border-top-color: ${({ theme }) => theme.colors.primary};
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+const shimmer = keyframes`
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
 `;
+
+const SkeletonBox = styled.div<{ $w?: string; $h?: string }>`
+  width: ${({ $w }) => $w || '100%'};
+  height: ${({ $h }) => $h || '16px'};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: linear-gradient(90deg, ${({ theme }) => theme.colors.borderLight} 25%, ${({ theme }) => theme.colors.surfaceHover} 50%, ${({ theme }) => theme.colors.borderLight} 75%);
+  background-size: 800px 100%;
+  animation: ${shimmer} 1.5s infinite linear;
+`;
+
+const SkeletonPreview = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radius.xl};
+  padding: ${({ theme }) => `${theme.spacing.md} ${theme.spacing.sm}`};
+  margin-bottom: ${({ theme }) => theme.spacing['2xl']};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+const SkeletonRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  padding: ${({ theme }) => `3px ${theme.spacing.sm}`};
+`;
+
+const SkeletonCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  padding: ${({ theme }) => `${theme.spacing.md} ${theme.spacing.lg}`};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+function TodaySkeleton() {
+  return (
+    <>
+      <SkeletonPreview>
+        <SkeletonBox $w="120px" $h="20px" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <SkeletonRow key={i}>
+              <SkeletonBox $w="22px" $h="22px" />
+              <SkeletonBox $w="90px" $h="14px" />
+              <SkeletonBox $w="60px" $h="14px" />
+            </SkeletonRow>
+          ))}
+        </div>
+      </SkeletonPreview>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <SkeletonCard key={i}>
+          <SkeletonBox $w="200px" $h="20px" />
+          <SkeletonBox $w="100%" $h="14px" />
+          <SkeletonBox $w="80%" $h="14px" />
+        </SkeletonCard>
+      ))}
+    </>
+  );
+}
 
 export default function TodayStudyPage() {
   const { data, loading, error, fetchData } = useStudy();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const handleDateChange = (date?: string) => {
-    fetchData(date);
+    if (date) fetchData(date);
   };
-
-  if (loading) {
-    return (
-      <Container>
-        <CenterMessage><LoadingSpinner /></CenterMessage>
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container>
-        <PageTitle>오늘의 단어</PageTitle>
-        <CenterMessage>
-          <p>{error}</p>
-          <RetryButton onClick={() => fetchData()}>다시 시도</RetryButton>
-        </CenterMessage>
-      </Container>
-    );
-  }
-
-  if (!data || data.preview.length === 0) {
-    return (
-      <Container>
-        <PageTitle>오늘의 단어</PageTitle>
-        <CenterMessage>오늘의 단어가 없습니다. 먼저 단어를 생성하세요.</CenterMessage>
-      </Container>
-    );
-  }
 
   return (
     <Container>
@@ -190,24 +209,37 @@ export default function TodayStudyPage() {
 
       <Spacer />
 
-      <PreviewSection>
-        <PreviewTitle>단어 미리보기</PreviewTitle>
-        <PreviewList>
-          {data.preview.map((w, i) => (
-            <PreviewItem key={w.number}>
-              <PreviewIndex>{i + 1}</PreviewIndex>
-              <PreviewWord>{w.english}</PreviewWord>
-              <PreviewMeaning>{w.korean}</PreviewMeaning>
-            </PreviewItem>
-          ))}
-        </PreviewList>
-      </PreviewSection>
+      {loading ? (
+        <TodaySkeleton />
+      ) : error ? (
+        <CenterMessage>
+          <p>{error}</p>
+          <RetryButton onClick={() => fetchData()}>다시 시도</RetryButton>
+        </CenterMessage>
+      ) : !data || data.preview.length === 0 ? (
+        <CenterMessage>단어가 없습니다.</CenterMessage>
+      ) : (
+        <>
+          <PreviewSection>
+            <PreviewTitle>단어 미리보기</PreviewTitle>
+            <PreviewList>
+              {data.preview.map((w, i) => (
+                <PreviewItem key={w.number}>
+                  <PreviewIndex>{i + 1}</PreviewIndex>
+                  <PreviewWord>{w.english}</PreviewWord>
+                  <PreviewMeaning>{w.korean}</PreviewMeaning>
+                </PreviewItem>
+              ))}
+            </PreviewList>
+          </PreviewSection>
 
-      <CardList>
-        {data.details.map((d) => (
-          <StudyCard key={d.number} detail={d} />
-        ))}
-      </CardList>
+          <CardList>
+            {data.details.map((d) => (
+              <StudyCard key={d.number} detail={d} />
+            ))}
+          </CardList>
+        </>
+      )}
     </Container>
   );
 }

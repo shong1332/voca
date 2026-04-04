@@ -54,19 +54,27 @@ export default function DateFilter({ onDateChange }: DateFilterProps) {
   const [dates, setDates] = useState<string[]>([]);
   const selected = searchParams.get('date') || '';
 
+  const [initialized, setInitialized] = useState(false);
+
   useEffect(() => {
+    if (initialized) return;
     fetch('/api/words/dates')
       .then(res => res.json())
-      .then(json => setDates(json.data || []))
-      .catch(() => {});
-  }, []);
+      .then(json => {
+        const list: string[] = json.data || [];
+        setDates(list);
 
-  // 초기 로드 시 URL에 date가 있으면 콜백 호출
-  useEffect(() => {
-    if (selected) {
-      onDateChange(selected);
-    }
-  }, []);
+        const urlDate = searchParams.get('date');
+        if (urlDate) {
+          onDateChange(urlDate);
+        } else if (isToday && list.length > 0) {
+          setSearchParams({ date: list[0] }, { replace: true });
+          onDateChange(list[0]);
+        }
+        setInitialized(true);
+      })
+      .catch(() => setInitialized(true));
+  }, [initialized]);
 
   const handleChange = (val: string) => {
     if (val) {

@@ -10,14 +10,9 @@ export function useStudy() {
     setLoading(true);
     setError(null);
     try {
-      const url = date ? `/api/study/words?date=${date}` : '/api/study/today';
+      const url = date ? `/api/study/words?date=${date}` : '/api/study/words';
       const res = await fetch(url);
-      if (!res.ok) {
-        if (res.status === 404) {
-          throw new Error('단어가 아직 생성되지 않았습니다.');
-        }
-        throw new Error('데이터를 불러오는데 실패했습니다.');
-      }
+      if (!res.ok) throw new Error('데이터를 불러오는데 실패했습니다.');
       const json = await res.json();
       setData(json.data);
     } catch (err) {
