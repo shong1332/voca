@@ -1,0 +1,31 @@
+import { useState, useCallback } from 'react';
+import type { TodayStudyData } from '../types';
+
+export function useStudy() {
+  const [data, setData] = useState<TodayStudyData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async (date?: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url = date ? `/api/study/words?date=${date}` : '/api/study/today';
+      const res = await fetch(url);
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error('단어가 아직 생성되지 않았습니다.');
+        }
+        throw new Error('데이터를 불러오는데 실패했습니다.');
+      }
+      const json = await res.json();
+      setData(json.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { data, loading, error, fetchData };
+}

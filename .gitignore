@@ -1,0 +1,8 @@
+node_modules/
+dist/
+data/study.db
+data/study.db-shm
+data/study.db-wal
+_workspace/
+.DS_Store
+*.log
