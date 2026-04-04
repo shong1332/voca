@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
 interface DateFilterProps {
@@ -48,6 +48,8 @@ const Select = styled.select`
 `;
 
 export default function DateFilter({ onDateChange }: DateFilterProps) {
+  const location = useLocation();
+  const isToday = location.pathname === '/today';
   const [searchParams, setSearchParams] = useSearchParams();
   const [dates, setDates] = useState<string[]>([]);
   const selected = searchParams.get('date') || '';
@@ -79,7 +81,7 @@ export default function DateFilter({ onDateChange }: DateFilterProps) {
     <Wrapper>
       <Label>학습 구간</Label>
       <Select value={selected} onChange={e => handleChange(e.target.value)}>
-        <option value="">전체</option>
+        {!isToday && <option value="">전체</option>}
         {dates.map(d => (
           <option key={d} value={d}>{d}</option>
         ))}
