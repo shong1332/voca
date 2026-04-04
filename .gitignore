@@ -3,6 +3,7 @@ dist/
 data/study.db
 data/study.db-shm
 data/study.db-wal
+today_study.txt
 _workspace/
 .DS_Store
 *.log
