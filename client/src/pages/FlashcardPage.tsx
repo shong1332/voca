@@ -14,13 +14,14 @@ const Container = styled.div`
   max-width: 700px;
   margin: 0 auto;
   padding: ${({ theme }) => theme.spacing['2xl']};
+  height: calc(100vh - 44px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
   ${({ theme }) => theme.mq.tablet} {
     padding: ${({ theme }) => theme.spacing.md};
-    height: calc(100dvh - 104px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    height: calc(100dvh - 92px);
   }
 `;
 
@@ -105,20 +106,6 @@ const RetryButton = styled.button`
   }
 `;
 
-const LoadingSpinner = styled.div`
-  width: 32px;
-  height: 32px;
-  border: 3px solid ${({ theme }) => theme.colors.borderLight};
-  border-top-color: ${({ theme }) => theme.colors.primary};
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`;
-
 export default function FlashcardPage() {
   const {
     currentWord, revealed, loading, error,
@@ -127,7 +114,7 @@ export default function FlashcardPage() {
 
   useEffect(() => {
     fetchWords();
-  }, [fetchWords]);
+  }, []);
 
   const handleDateChange = (date?: string) => {
     fetchWords(date);
@@ -148,11 +135,7 @@ export default function FlashcardPage() {
   }, [next, prev, reveal, revealed]);
 
   if (loading) {
-    return (
-      <Container>
-        <CenterMessage><LoadingSpinner /></CenterMessage>
-      </Container>
-    );
+    return <Container />;
   }
 
   if (error) {

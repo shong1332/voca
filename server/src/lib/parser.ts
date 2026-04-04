@@ -55,7 +55,7 @@ export function parseTodayStudy(): StudyContent | null {
 
   const previewLines = previewSection.split("\n");
   for (const line of previewLines) {
-    const match = line.match(/^(\d+)\.\s+(.+?)\s+\/\s+(.+?)\s+\/\s+(.+)$/);
+    const match = line.match(/^(\d+)\.\s+(.+?)\s+\/\s+(.+?)\s+\/\s+(.*)$/);
     if (match) {
       preview.push({
         number: parseInt(match[1]),

@@ -4,8 +4,6 @@ interface FeedbackProps {
   correct: boolean;
   correctAnswer: string;
   korean: string;
-  exampleSentence: string | null;
-  exampleTranslation: string | null;
   accuracy: number;
   onNext: () => void;
 }
@@ -22,7 +20,6 @@ const Wrapper = styled.div<{ $correct: boolean }>`
   background: ${({ theme, $correct }) => $correct ? theme.colors.successLight : theme.colors.dangerLight};
   border: 1px solid ${({ theme, $correct }) => $correct ? theme.colors.success : theme.colors.danger};
   animation: ${slideIn} 0.25s ease;
-  overflow-y: auto;
   position: relative;
 
   ${({ theme }) => theme.mq.mobile} {
@@ -62,27 +59,6 @@ const KoreanText = styled.p`
   margin-bottom: ${({ theme }) => theme.spacing.md};
 `;
 
-const ExampleSection = styled.div`
-  background: ${({ theme }) => theme.colors.bg};
-  border-radius: ${({ theme }) => theme.radius.md};
-  padding: ${({ theme }) => theme.spacing.md};
-  margin-bottom: ${({ theme }) => theme.spacing.sm};
-`;
-
-const ExampleSentence = styled.p`
-  font-size: ${({ theme }) => theme.fontSizes.md};
-  color: ${({ theme }) => theme.colors.text};
-  font-style: italic;
-  line-height: 1.6;
-  margin-bottom: ${({ theme }) => theme.spacing.xs};
-`;
-
-const ExampleTranslation = styled.p`
-  font-size: ${({ theme }) => theme.fontSizes.sm};
-  color: ${({ theme }) => theme.colors.textMuted};
-  line-height: 1.5;
-`;
-
 const NextButton = styled.button`
   padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.xl}`};
   background: ${({ theme }) => theme.colors.primary};
@@ -97,7 +73,7 @@ const NextButton = styled.button`
   }
 `;
 
-export default function Feedback({ correct, correctAnswer, korean, exampleSentence, exampleTranslation, accuracy, onNext }: FeedbackProps) {
+export default function Feedback({ correct, correctAnswer, korean, accuracy, onNext }: FeedbackProps) {
   return (
     <Wrapper $correct={correct}>
       <TopRow>
@@ -106,14 +82,6 @@ export default function Feedback({ correct, correctAnswer, korean, exampleSenten
       </TopRow>
       <CorrectAnswerText>{correctAnswer}</CorrectAnswerText>
       <KoreanText>{korean}</KoreanText>
-      {exampleSentence && (
-        <ExampleSection>
-          <ExampleSentence>{exampleSentence}</ExampleSentence>
-          {exampleTranslation && (
-            <ExampleTranslation>→ {exampleTranslation}</ExampleTranslation>
-          )}
-        </ExampleSection>
-      )}
       <NextButton onClick={onNext}>다음 퀴즈</NextButton>
     </Wrapper>
   );

@@ -24,7 +24,7 @@ const initialFeedback: FeedbackState = {
 export function useQuiz() {
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>(initialFeedback);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
   const [currentDate, setCurrentDate] = useState<string | undefined>();
@@ -91,6 +91,7 @@ export function useQuiz() {
 
   const dismissFeedback = useCallback(() => {
     setFeedback(initialFeedback);
+    window.scrollTo(0, 0);
     fetchNext();
   }, [fetchNext]);
 

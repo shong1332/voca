@@ -8,21 +8,21 @@ const Nav = styled.nav`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.xs};
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
   z-index: 100;
 
   ${({ theme }) => theme.mq.tablet} {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
     top: auto;
+    bottom: 0;
+    height: 56px;
     border-bottom: none;
     border-top: 1px solid ${({ theme }) => theme.colors.border};
     padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.sm}`};
     justify-content: space-around;
-    z-index: 100;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
   }
 `;

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
 interface DateFilterProps {
@@ -50,38 +50,29 @@ const Select = styled.select`
 export default function DateFilter({ onDateChange }: DateFilterProps) {
   const location = useLocation();
   const isToday = location.pathname === '/today';
-  const [searchParams, setSearchParams] = useSearchParams();
   const [dates, setDates] = useState<string[]>([]);
-  const selected = searchParams.get('date') || '';
-
-  const [initialized, setInitialized] = useState(false);
+  const [selected, setSelected] = useState('');
+  const initRef = useRef(false);
 
   useEffect(() => {
-    if (initialized) return;
+    if (initRef.current) return;
+    initRef.current = true;
     fetch('/api/words/dates')
       .then(res => res.json())
       .then(json => {
         const list: string[] = json.data || [];
         setDates(list);
 
-        const urlDate = searchParams.get('date');
-        if (urlDate) {
-          onDateChange(urlDate);
-        } else if (isToday && list.length > 0) {
-          setSearchParams({ date: list[0] }, { replace: true });
+        if (isToday && list.length > 0) {
+          setSelected(list[0]);
           onDateChange(list[0]);
         }
-        setInitialized(true);
       })
-      .catch(() => setInitialized(true));
-  }, [initialized]);
+      .catch(() => {});
+  }, []);
 
   const handleChange = (val: string) => {
-    if (val) {
-      setSearchParams({ date: val });
-    } else {
-      setSearchParams({});
-    }
+    setSelected(val);
     onDateChange(val || undefined);
   };
 

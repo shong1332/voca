@@ -30,32 +30,35 @@ const Card = styled.div`
 `;
 
 const Header = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  padding-bottom: ${({ theme }) => theme.spacing.sm};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderLight};
+`;
+
+const HeaderRow1 = styled.div`
   display: flex;
-  align-items: baseline;
-  gap: ${({ theme }) => theme.spacing.md};
-  margin-bottom: ${({ theme }) => theme.spacing.lg};
-  padding-bottom: ${({ theme }) => theme.spacing.md};
-  border-bottom: 2px solid ${({ theme }) => theme.colors.borderLight};
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  margin-bottom: 2px;
 `;
 
 const WordNumber = styled.span`
-  font-size: ${({ theme }) => theme.fontSizes.sm};
+  font-size: ${({ theme }) => theme.fontSizes.xs};
   color: ${({ theme }) => theme.colors.primary};
   font-weight: 700;
-  background: ${({ theme }) => theme.colors.primaryLight}22;
-  padding: 2px 10px;
-  border-radius: ${({ theme }) => theme.radius.full};
+  flex-shrink: 0;
 `;
 
 const WordText = styled.h3`
-  font-size: ${({ theme }) => theme.fontSizes['2xl']};
+  font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const Meaning = styled.span`
-  font-size: ${({ theme }) => theme.fontSizes.lg};
+const Meaning = styled.div`
+  font-size: ${({ theme }) => theme.fontSizes.sm};
   color: ${({ theme }) => theme.colors.textSecondary};
+  padding-left: ${({ theme }) => theme.spacing.xl};
 `;
 
 const Pronunciation = styled.p`
@@ -112,13 +115,12 @@ export default function StudyCard({ detail }: StudyCardProps) {
   return (
     <Card>
       <Header>
-        <WordNumber>#{detail.number}</WordNumber>
-        <WordText>{detail.english}</WordText>
-        <Meaning>{detail.korean}</Meaning>
+        <HeaderRow1>
+          <WordNumber>#{detail.number}</WordNumber>
+          <WordText>{detail.english}</WordText>
+        </HeaderRow1>
+        <Meaning>{detail.korean}{detail.pronunciation && ` / ${detail.pronunciation}`}</Meaning>
       </Header>
-      {detail.pronunciation && (
-        <Pronunciation>{detail.pronunciation}</Pronunciation>
-      )}
       {detail.examples.length > 0 && (
         <Section>
           <SectionLabel>예문</SectionLabel>

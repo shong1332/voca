@@ -65,9 +65,7 @@ router.get("/stats", (_req: Request, res: Response) => {
     }
 
     // KST 기준 오늘 날짜
-    const now = new Date();
-    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    const todayStr = kst.toISOString().substring(0, 10);
+    const todayStr = new Date().toLocaleString("sv-SE", { timeZone: "Asia/Seoul" }).substring(0, 10);
 
     const todayResult = db
       .prepare(

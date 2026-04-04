@@ -10,13 +10,9 @@ const Container = styled.div`
   max-width: 700px;
   margin: 0 auto;
   padding: ${({ theme }) => theme.spacing['2xl']};
-  display: flex;
-  flex-direction: column;
 
   ${({ theme }) => theme.mq.tablet} {
     padding: ${({ theme }) => theme.spacing.md};
-    height: calc(100dvh - 104px);
-    overflow: hidden;
   }
 `;
 
@@ -59,20 +55,6 @@ const RetryButton = styled.button`
 
   &:hover {
     background: ${({ theme }) => theme.colors.primaryDark};
-  }
-`;
-
-const LoadingSpinner = styled.div`
-  width: 32px;
-  height: 32px;
-  border: 3px solid ${({ theme }) => theme.colors.borderLight};
-  border-top-color: ${({ theme }) => theme.colors.primary};
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
   }
 `;
 
@@ -122,11 +104,7 @@ export default function QuizPage() {
   }, [fetchNext]);
 
   if (loading && !question) {
-    return (
-      <Container>
-        <CenterMessage><LoadingSpinner /></CenterMessage>
-      </Container>
-    );
+    return <Container />;
   }
 
   if (error) {
@@ -165,8 +143,6 @@ export default function QuizPage() {
               correct={feedback.correct}
               correctAnswer={feedback.correctAnswer}
               korean={feedback.korean}
-              exampleSentence={feedback.exampleSentence}
-              exampleTranslation={feedback.exampleTranslation}
               accuracy={totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0}
               onNext={dismissFeedback}
             />

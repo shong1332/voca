@@ -235,8 +235,6 @@ const StatLabel = styled.div`
 export default function ManagePage() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
-
-  if (!isDesktop) return <Navigate to="/" replace />;
   const [words, setWords] = useState<Word[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -363,6 +361,8 @@ export default function ManagePage() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [navigate]);
+
+  if (!isDesktop) return <Navigate to="/" replace />;
 
   return (
     <Container>

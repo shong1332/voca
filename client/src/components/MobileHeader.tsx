@@ -7,11 +7,13 @@ const Header = styled.header`
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
+    height: 36px;
     background: ${({ theme }) => theme.colors.surface};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
   }
 `;

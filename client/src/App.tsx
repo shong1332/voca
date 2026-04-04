@@ -10,9 +10,11 @@ import ManagePage from './pages/ManagePage'
 
 const Main = styled.main`
   flex: 1;
+  padding-top: 44px;
 
   ${({ theme }) => theme.mq.tablet} {
-    padding-bottom: 64px;
+    padding-top: 36px;
+    padding-bottom: 56px;
   }
 `;
 

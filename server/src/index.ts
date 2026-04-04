@@ -37,9 +37,7 @@ app.use("/api", (req, _res, next) => {
     }
 
     // KST 시간 생성
-    const now = new Date();
-    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    const accessedAt = kst.toISOString().replace("T", " ").substring(0, 19);
+    const accessedAt = new Date().toLocaleString("sv-SE", { timeZone: "Asia/Seoul" }).substring(0, 19);
 
     try {
       db.prepare(
