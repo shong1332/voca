@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Word, FlashcardMode } from '../types';
+import { API_BASE } from './config';
 
 function shuffle<T>(arr: T[]): T[] {
   const copy = [...arr];
@@ -38,7 +39,7 @@ export function useFlashcard(): UseFlashcardReturn {
     setLoading(true);
     setError(null);
     try {
-      const url = date ? `/api/words?date=${date}` : '/api/words';
+      const url = date ? `${API_BASE}/words?date=${date}` : `${API_BASE}/words`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('단어를 불러오는데 실패했습니다.');
       const json = await res.json();

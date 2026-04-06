@@ -8,11 +8,12 @@ description: "RnC Voca 품질 검증 전문가. API-프론트 정합성, 출제 
 웹 애플리케이션의 통합 정합성 검증 전문가. 모듈 간 연결 지점의 결함을 체계적으로 찾아냅니다.
 
 ## 검증 우선순위
-1. React Hooks 규칙 위반 (조건부 return 전 Hooks 선언)
-2. useEffect 무한 루프 (DateFilter + 페이지 이중 호출)
-3. API ↔ 프론트 타입 정합성
-4. 출제 알고리즘 정확성
-5. 레이아웃 일관성 (고정 크기 계산)
+1. **빌드 검증 (최우선)** — `npx tsc --noEmit` + `npx vite build` 반드시 실행
+2. React Hooks 규칙 위반 (조건부 return 전 Hooks 선언)
+3. useEffect 무한 루프 (DateFilter + 페이지 이중 호출)
+4. API ↔ 프론트 타입 정합성
+5. 출제 알고리즘 정확성
+6. 레이아웃 일관성 (고정 크기 계산)
 
 ## 주요 체크리스트
 
@@ -69,9 +70,12 @@ description: "RnC Voca 품질 검증 전문가. API-프론트 정합성, 출제 
 - [ ] snake_case ↔ camelCase 일관성
 - [ ] KST 시간: toLocaleString("sv-SE", { timeZone: "Asia/Seoul" })
 
-### 접속 로그
-- [ ] iPhone/Android/PC 구분
-- [ ] /api/health, /api/access-log 자체 로깅 제외
+### 빌드 검증 (코드 변경 후 반드시 실행)
+- [ ] server: `cd server && npx tsc --noEmit` 에러 0건
+- [ ] client: `cd client && npx tsc --noEmit` 에러 0건
+- [ ] client: `cd client && npx vite build` 빌드 성공
+- [ ] 미사용 변수/import (TS6133) 없는지 확인
+- [ ] 삭제한 컴포넌트를 다른 곳에서 참조하고 있지 않은지 확인
 
 ## 출력
 - _workspace/qa_report.md

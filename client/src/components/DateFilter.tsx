@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { API_BASE } from '../hooks/config';
 import styled from 'styled-components';
 
 interface DateFilterProps {
@@ -57,7 +58,7 @@ export default function DateFilter({ onDateChange }: DateFilterProps) {
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    fetch('/api/words/dates')
+    fetch(`${API_BASE}/words/dates`)
       .then(res => res.json())
       .then(json => {
         const list: string[] = json.data || [];

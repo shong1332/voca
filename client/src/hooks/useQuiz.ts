@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { QuizQuestion, QuizResult } from '../types';
+import { API_BASE } from './config';
 
 interface FeedbackState {
   show: boolean;
@@ -39,7 +40,7 @@ export function useQuiz() {
     if (date !== undefined) setCurrentDate(date);
     const useDate = date !== undefined ? date : currentDate;
     try {
-      const url = useDate ? `/api/quiz/next?date=${useDate}` : '/api/quiz/next';
+      const url = useDate ? `${API_BASE}/quiz/next?date=${useDate}` : `${API_BASE}/quiz/next`;
       const res = await fetch(url);
       if (!res.ok) {
         if (res.status === 400) {
@@ -60,7 +61,7 @@ export function useQuiz() {
     if (!question || !answer.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/quiz/answer', {
+      const res = await fetch(`${API_BASE}/quiz/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

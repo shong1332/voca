@@ -75,13 +75,6 @@ const Meaning = styled.div`
   padding-left: ${({ theme }) => theme.spacing.xl};
 `;
 
-const Pronunciation = styled.p`
-  font-size: ${({ theme }) => theme.fontSizes.sm};
-  color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: ${({ theme }) => theme.spacing.lg};
-  font-style: italic;
-`;
-
 const Section = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.md};
 `;

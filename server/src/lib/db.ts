@@ -67,14 +67,4 @@ db.exec(`
   );
 `);
 
-// 접속 로그 테이블 생성
-db.exec(`
-  CREATE TABLE IF NOT EXISTS access_log (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    device TEXT NOT NULL,
-    page TEXT NOT NULL,
-    accessed_at TEXT NOT NULL
-  );
-`);
-
 export default db;

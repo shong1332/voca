@@ -20,7 +20,7 @@ const Main = styled.main`
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/voca">
       <MobileHeader />
       <Navigation />
       <Main>

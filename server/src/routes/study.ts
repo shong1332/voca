@@ -1,13 +1,8 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
 import db from "../lib/db";
-import { parseTodayStudy } from "../lib/parser";
 
 const router = Router();
-
-const STUDY_FILE_PATH = path.resolve(__dirname, "../../../today_study.txt");
 
 interface WordRow {
   id: number;
@@ -22,20 +17,6 @@ interface WordRow {
   last_studied_at: string | null;
 }
 
-// GET /api/study/today - today_study.txt 파싱 결과 반환
-router.get("/today", (_req: Request, res: Response) => {
-  try {
-    const content = parseTodayStudy();
-    if (!content) {
-      res.status(404).json({ error: "먼저 단어를 생성하세요" });
-      return;
-    }
-    res.json({ data: content });
-  } catch (err) {
-    res.status(500).json({ error: "학습 자료를 불러올 수 없습니다" });
-  }
-});
-
 // GET /api/study/words?date=YYYY-MM-DD — 날짜별 단어 상세 (today 페이지용)
 router.get("/words", (req: Request, res: Response) => {
   try {
@@ -43,7 +24,6 @@ router.get("/words", (req: Request, res: Response) => {
 
     let rows: WordRow[];
     if (date && typeof date === "string") {
-      // daily_words에 기록이 있으면 조인 (복습 단어 포함)
       const dailyCount = db
         .prepare("SELECT COUNT(*) as cnt FROM daily_words WHERE study_date = ?")
         .get(date) as { cnt: number };
@@ -55,7 +35,6 @@ router.get("/words", (req: Request, res: Response) => {
           )
           .all(date) as WordRow[];
       } else {
-        // daily_words에 기록이 없으면 words 테이블에서 직접 조회
         rows = db
           .prepare("SELECT * FROM words WHERE study_date = ? ORDER BY id")
           .all(date) as WordRow[];
@@ -184,11 +163,10 @@ router.post("/create-daily", (req: Request, res: Response) => {
       [allWords[i], allWords[j]] = [allWords[j], allWords[i]];
     }
 
-    // 3.5. daily_words 테이블에 기록
+    // 4. daily_words 테이블에 기록
     const insertDaily = db.prepare(
       "INSERT INTO daily_words (study_date, word_id) VALUES (?, ?)"
     );
-    // 기존 같은 날짜 기록 삭제 후 재삽입
     db.prepare("DELETE FROM daily_words WHERE study_date = ?").run(date);
     const insertDailyMany = db.transaction(() => {
       for (const w of allWords) {
@@ -197,44 +175,12 @@ router.post("/create-daily", (req: Request, res: Response) => {
     });
     insertDailyMany();
 
-    // 4. today_study.txt 생성
-    const lines: string[] = [];
-    lines.push(`📚 오늘의 단어 (${date})`);
-    lines.push("");
-
-    // 미리보기
-    allWords.forEach((w, i) => {
-      lines.push(
-        `${i + 1}. ${w.english} / ${w.korean} / ${w.pronunciation || ""}`
-      );
-    });
-
-    // 상세
-    allWords.forEach((w, i) => {
-      lines.push("");
-      lines.push("────────────────────────");
-      lines.push("");
-      lines.push(
-        `${i + 1}. ${w.english} (${w.korean}) / ${w.pronunciation || ""}`
-      );
-      if (w.example_sentence) {
-        lines.push(`* ${w.example_sentence}`);
-        if (w.example_translation) {
-          lines.push(`  → ${w.example_translation}`);
-        }
-      }
-    });
-
-    const txt = lines.join("\n");
-    fs.writeFileSync(STUDY_FILE_PATH, txt, "utf-8");
-
     res.json({
       data: {
         imported,
         skipped,
         reviewCount: reviewWords.length,
         totalWords: allWords.length,
-        filePath: "today_study.txt",
       },
     });
   } catch (err) {

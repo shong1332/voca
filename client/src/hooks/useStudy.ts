@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { TodayStudyData } from '../types';
+import { API_BASE } from './config';
 
 export function useStudy() {
   const [data, setData] = useState<TodayStudyData | null>(null);
@@ -11,7 +12,7 @@ export function useStudy() {
     setError(null);
     const start = Date.now();
     try {
-      const url = date ? `/api/study/words?date=${date}` : '/api/study/words';
+      const url = date ? `${API_BASE}/study/words?date=${date}` : `${API_BASE}/study/words`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('데이터를 불러오는데 실패했습니다.');
       const json = await res.json();

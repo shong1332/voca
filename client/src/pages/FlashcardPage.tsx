@@ -167,7 +167,7 @@ function speak(text: string, lang: 'en-GB' | 'en-US') {
 
 export default function FlashcardPage() {
   const {
-    currentWord, revealed, loading, error,
+    currentWord, revealed, error,
     mode, setMode, reveal, next, prev, fetchWords,
   } = useFlashcard();
 

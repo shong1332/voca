@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import DateFilter from '../components/DateFilter';
 import type { Word } from '../types';
+import { API_BASE } from '../hooks/config';
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth > 768);
@@ -169,67 +170,11 @@ const ResetLink = styled.button`
   &:disabled { opacity: 0.4; cursor: not-allowed; text-decoration: none; }
 `;
 
-const TabRow = styled.div`
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-`;
-
-const Tab = styled.button<{ $active: boolean }>`
-  padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg}`};
-  font-size: ${({ theme }) => theme.fontSizes.sm};
-  font-weight: ${({ $active }) => $active ? 600 : 400};
-  color: ${({ theme, $active }) => $active ? theme.colors.primary : theme.colors.textSecondary};
-  border-bottom: 2px solid ${({ theme, $active }) => $active ? theme.colors.primary : 'transparent'};
-  transition: all ${({ theme }) => theme.transitions.fast};
-  margin-bottom: -1px;
-
-  &:hover { color: ${({ theme }) => theme.colors.text}; }
-`;
-
 const EmptyState = styled.div`
   text-align: center;
   padding: ${({ theme }) => theme.spacing['2xl']};
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.fontSizes.sm};
-`;
-
-const DeviceTag = styled.span<{ $device: string }>`
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: ${({ theme }) => theme.radius.full};
-  font-size: 11px;
-  font-weight: 600;
-  background: ${({ $device }) =>
-    $device === 'iPhone' ? '#E0F2FE' : $device === 'Android' ? '#DCFCE7' : '#F1F5F9'};
-  color: ${({ $device }) =>
-    $device === 'iPhone' ? '#0284C7' : $device === 'Android' ? '#16A34A' : '#64748B'};
-`;
-
-const StatCards = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.md};
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-`;
-
-const StatCard = styled.div`
-  padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg}`};
-  background: ${({ theme }) => theme.colors.surfaceHover};
-  border-radius: ${({ theme }) => theme.radius.md};
-  text-align: center;
-`;
-
-const StatNum = styled.div`
-  font-size: ${({ theme }) => theme.fontSizes.xl};
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.text};
-  font-family: ${({ theme }) => theme.fonts.mono};
-`;
-
-const StatLabel = styled.div`
-  font-size: 11px;
-  color: ${({ theme }) => theme.colors.textMuted};
 `;
 
 export default function ManagePage() {
@@ -248,7 +193,7 @@ export default function ManagePage() {
     setLoading(true);
     setError(null);
     try {
-      const url = selectedDate ? `/api/words?date=${selectedDate}` : '/api/words';
+      const url = selectedDate ? `${API_BASE}/words?date=${selectedDate}` : `${API_BASE}/words`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       const json = await res.json();
@@ -280,7 +225,7 @@ export default function ManagePage() {
   const handleReset = async (id: number) => {
     setResettingId(id);
     try {
-      const res = await fetch(`/api/words/${id}/reset`, { method: 'PUT' });
+      const res = await fetch(`${API_BASE}/words/${id}/reset`, { method: 'PUT' });
       if (!res.ok) throw new Error('Reset failed');
       setWords(prev => prev.map(w => w.id === id ? { ...w, wrongCount: 0, correctCount: 0 } : w));
     } catch { alert('초기화 실패'); }
@@ -293,7 +238,7 @@ export default function ManagePage() {
     setDeleting(true);
     try {
       const results = await Promise.all(
-        Array.from(selectedIds).map(id => fetch(`/api/words/${id}`, { method: 'DELETE' }))
+        Array.from(selectedIds).map(id => fetch(`${API_BASE}/words/${id}`, { method: 'DELETE' }))
       );
       const failed = results.filter(r => !r.ok).length;
       if (failed > 0) alert(`${failed}개 삭제 실패`);
@@ -304,40 +249,17 @@ export default function ManagePage() {
   };
 
   const [resettingAll, setResettingAll] = useState(false);
-  const [activeTab, setActiveTab] = useState<'words' | 'logs'>('words');
-  const [logs, setLogs] = useState<Array<{ id: number; device: string; page: string; accessedAt: string }>>([]);
-  const [logStats, setLogStats] = useState<{ total: number; byDevice: Record<string, number>; today: number } | null>(null);
-  const [logsLoading, setLogsLoading] = useState(false);
 
   const handleResetAll = async () => {
     if (!window.confirm('전체 단어의 가중치를 초기화하시겠습니까?')) return;
     setResettingAll(true);
     try {
-      const res = await fetch('/api/words/reset-all', { method: 'PUT' });
+      const res = await fetch(`${API_BASE}/words/reset-all`, { method: 'PUT' });
       if (!res.ok) throw new Error('Failed');
       setWords(prev => prev.map(w => ({ ...w, wrongCount: 0, correctCount: 0 })));
     } catch { alert('전체 초기화 실패'); }
     finally { setResettingAll(false); }
   };
-
-  const fetchLogs = useCallback(async () => {
-    setLogsLoading(true);
-    try {
-      const [logsRes, statsRes] = await Promise.all([
-        fetch('/api/access-log'),
-        fetch('/api/access-log/stats'),
-      ]);
-      const logsJson = await logsRes.json();
-      const statsJson = await statsRes.json();
-      setLogs(logsJson.data || []);
-      setLogStats(statsJson.data || null);
-    } catch { /* ignore */ }
-    finally { setLogsLoading(false); }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'logs') fetchLogs();
-  }, [activeTab, fetchLogs]);
 
   const getWeight = (w: Word) => 1 + w.wrongCount * 2;
   const getAttempts = (w: Word) => w.wrongCount + w.correctCount;
@@ -370,66 +292,6 @@ export default function ManagePage() {
         <Title>관리</Title>
       </Header>
 
-      <TabRow>
-        <Tab $active={activeTab === 'words'} onClick={() => setActiveTab('words')}>단어 관리</Tab>
-        <Tab $active={activeTab === 'logs'} onClick={() => setActiveTab('logs')}>접속 로그</Tab>
-      </TabRow>
-
-      {activeTab === 'logs' ? (
-        logsLoading ? (
-          <EmptyState>로딩 중...</EmptyState>
-        ) : (
-          <>
-            {logStats && (
-              <StatCards>
-                <StatCard>
-                  <StatNum>{logStats.total}</StatNum>
-                  <StatLabel>전체</StatLabel>
-                </StatCard>
-                <StatCard>
-                  <StatNum>{logStats.today}</StatNum>
-                  <StatLabel>오늘</StatLabel>
-                </StatCard>
-                <StatCard>
-                  <StatNum>{logStats.byDevice?.iPhone || 0}</StatNum>
-                  <StatLabel>iPhone</StatLabel>
-                </StatCard>
-                <StatCard>
-                  <StatNum>{logStats.byDevice?.Android || 0}</StatNum>
-                  <StatLabel>Android</StatLabel>
-                </StatCard>
-                <StatCard>
-                  <StatNum>{logStats.byDevice?.PC || 0}</StatNum>
-                  <StatLabel>PC</StatLabel>
-                </StatCard>
-              </StatCards>
-            )}
-            <TableWrapper>
-              <Table>
-                <Thead>
-                  <tr>
-                    <Th>시각</Th>
-                    <Th>기기</Th>
-                    <Th>페이지</Th>
-                  </tr>
-                </Thead>
-                <tbody>
-                  {logs.length === 0 ? (
-                    <tr><Td colSpan={3} style={{ textAlign: 'center', padding: '2rem' }}>접속 기록이 없습니다.</Td></tr>
-                  ) : logs.map(log => (
-                    <Tr key={log.id}>
-                      <Td><Muted>{log.accessedAt}</Muted></Td>
-                      <Td><DeviceTag $device={log.device}>{log.device}</DeviceTag></Td>
-                      <Td><Mono>{log.page}</Mono></Td>
-                    </Tr>
-                  ))}
-                </tbody>
-              </Table>
-            </TableWrapper>
-          </>
-        )
-      ) : (
-      <>
       <HeaderRight>
         <DateFilter onDateChange={d => setSelectedDate(d)} />
       </HeaderRight>
@@ -500,8 +362,6 @@ export default function ManagePage() {
             </tbody>
           </Table>
         </TableWrapper>
-      )}
-      </>
       )}
     </Container>
   );
