@@ -1,4 +1,18 @@
+import { useEffect } from 'react';
 import styled from 'styled-components';
+
+function speakEnglish(text: string) {
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US';
+  u.rate = 0.9;
+  const voices = speechSynthesis.getVoices();
+  const voice = voices.find(v =>
+    v.name.includes('Samantha') || v.name.includes('Google US English')
+  ) || voices.find(v => v.lang.startsWith('en-US'));
+  if (voice) u.voice = voice;
+  speechSynthesis.speak(u);
+}
+
 interface WordDetailType {
   number: number;
   english: string;
@@ -89,11 +103,35 @@ const ExampleBlock = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xs};
 `;
 
+const ExampleRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
 const ExampleEnglish = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.md};
   color: ${({ theme }) => theme.colors.text};
   line-height: 1.7;
   font-style: italic;
+  flex: 1;
+`;
+
+const SpeakBtn = styled.button`
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  color: ${({ theme }) => theme.colors.textMuted};
+  transition: color ${({ theme }) => theme.transitions.fast};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+  }
 `;
 
 const ExampleKorean = styled.p`
@@ -112,6 +150,11 @@ const SectionText = styled.p`
 `;
 
 export default function StudyCard({ detail }: StudyCardProps) {
+  useEffect(() => {
+    speechSynthesis.getVoices();
+    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+  }, []);
+
   return (
     <Card>
       <Header>
@@ -126,7 +169,10 @@ export default function StudyCard({ detail }: StudyCardProps) {
           <SectionLabel>예문</SectionLabel>
           {detail.examples.map((ex, i) => (
             <ExampleBlock key={i}>
-              <ExampleEnglish>{ex.english}</ExampleEnglish>
+              <ExampleRow>
+                <ExampleEnglish>{ex.english}</ExampleEnglish>
+                <SpeakBtn onClick={() => speakEnglish(ex.english)}>🔊</SpeakBtn>
+              </ExampleRow>
               <ExampleKorean>→ {ex.korean}</ExampleKorean>
             </ExampleBlock>
           ))}

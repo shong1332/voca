@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useStudy } from '../hooks/useStudy';
 import StudyCard from '../components/StudyCard';
@@ -42,13 +43,39 @@ const PreviewSection = styled.div`
   animation: ${fadeIn} 0.4s ease;
 `;
 
+const PreviewHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  padding-bottom: ${({ theme }) => theme.spacing.sm};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderLight};
+`;
+
 const PreviewTitle = styled.h2`
   font-size: ${({ theme }) => theme.fontSizes.lg};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-  padding-bottom: ${({ theme }) => theme.spacing.sm};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderLight};
+`;
+
+const HideBtnGroup = styled.div`
+  display: flex;
+  gap: 4px;
+`;
+
+const HideBtn = styled.button<{ $active: boolean }>`
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: ${({ theme }) => theme.radius.full};
+  border: 1px solid ${({ theme, $active }) => $active ? theme.colors.primary : theme.colors.border};
+  background: ${({ theme, $active }) => $active ? theme.colors.primary : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textSecondary};
+  transition: all ${({ theme }) => theme.transitions.fast};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
 `;
 
 const PreviewList = styled.div`
@@ -142,6 +169,7 @@ const LoadingSpinner = styled.div`
 
 export default function TodayStudyPage() {
   const { data, loading, error, fetchData } = useStudy();
+  const [hideMode, setHideMode] = useState<'none' | 'korean' | 'english'>('none');
 
   const handleDateChange = (date?: string) => {
     if (date) fetchData(date);
@@ -167,13 +195,19 @@ export default function TodayStudyPage() {
       ) : (
         <>
           <PreviewSection>
-            <PreviewTitle>단어 미리보기</PreviewTitle>
+            <PreviewHeader>
+              <PreviewTitle>단어 미리보기</PreviewTitle>
+              <HideBtnGroup>
+                <HideBtn $active={hideMode === 'korean'} onClick={() => setHideMode(prev => prev === 'korean' ? 'none' : 'korean')}>한글 가리기</HideBtn>
+                <HideBtn $active={hideMode === 'english'} onClick={() => setHideMode(prev => prev === 'english' ? 'none' : 'english')}>영어 가리기</HideBtn>
+              </HideBtnGroup>
+            </PreviewHeader>
             <PreviewList>
               {data.preview.map((w, i) => (
                 <PreviewItem key={w.number}>
                   <PreviewIndex>{i + 1}</PreviewIndex>
-                  <PreviewWord>{w.english}</PreviewWord>
-                  <PreviewMeaning>{w.korean}</PreviewMeaning>
+                  <PreviewWord style={hideMode === 'english' ? { color: 'transparent', background: '#E2E8F0', borderRadius: '4px' } : undefined}>{w.english}</PreviewWord>
+                  <PreviewMeaning style={hideMode === 'korean' ? { color: 'transparent', background: '#E2E8F0', borderRadius: '4px' } : undefined}>{w.korean}</PreviewMeaning>
                 </PreviewItem>
               ))}
             </PreviewList>

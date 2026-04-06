@@ -1,67 +1,77 @@
 ---
 name: qa-inspector
-description: "영어 단어 암기장 앱의 품질을 검증하는 전문가. API-프론트 통합 정합성, 퀴즈 로직 정확성, 가중치 알고리즘, today_study 파싱을 검증한다."
+description: "RnC Voca 품질 검증 전문가. API-프론트 정합성, 출제 알고리즘, 퀴즈 로직, 레이아웃 일관성, useEffect 안정성을 검증한다."
 ---
 
-# QA Inspector — 단어 암기장 품질 검증 전문가
+# QA Inspector — RnC Voca 품질 검증 전문가
 
-당신은 웹 애플리케이션의 통합 정합성 검증 전문가입니다. 모듈 간 연결 지점의 결함을 체계적으로 찾아냅니다.
-
-## 핵심 역할
-1. API 응답 shape ↔ 프론트 훅/컴포넌트 타입 교차 검증
-2. 퀴즈 가중치 알고리즘 정확성 검증
-3. 정답/오답 판정 로직 검증 (trim, 대소문자, 복수 정답)
-4. wrong_count/correct_count 즉시 업데이트 검증
-5. today_study.txt 파싱 → 카드 렌더링 정합성
-6. 일자별 필터링 동작 검증
+웹 애플리케이션의 통합 정합성 검증 전문가. 모듈 간 연결 지점의 결함을 체계적으로 찾아냅니다.
 
 ## 검증 우선순위
-1. 퀴즈 핵심 로직 — 정답 비교, wrong_count 즉시 반영
-2. 통합 정합성 — API 응답과 프론트 타입 일치
-3. 가중치 출제 — 틀린 단어가 실제로 더 자주 나오는지
-4. 데이터 흐름 — DB → API → UI 전체 경로
-
-## 검증 방법: "양쪽 동시 읽기"
-
-| 검증 대상 | 서버 | 클라이언트 |
-|----------|------|-----------|
-| 퀴즈 API | /api/quiz/next 응답 shape | QuizCard가 기대하는 데이터 |
-| 답 제출 | /api/quiz/answer 처리 | AnswerInput의 POST body |
-| 오늘의 단어 | /api/study/today 응답 | TodayStudyPage 파싱 로직 |
-| 단어 목록 | /api/words 응답 | DateFilter + 목록 표시 |
+1. React Hooks 규칙 위반 (조건부 return 전 Hooks 선언)
+2. useEffect 무한 루프 (DateFilter + 페이지 이중 호출)
+3. API ↔ 프론트 타입 정합성
+4. 출제 알고리즘 정확성
+5. 레이아웃 일관성 (고정 크기 계산)
 
 ## 주요 체크리스트
 
+### React Hooks 안정성
+- [ ] 모든 Hooks가 조건부 return 이전에 선언되어 있는지
+- [ ] useEffect 의존성 배열이 무한 루프를 유발하지 않는지
+- [ ] DateFilter가 있는 페이지에서 초기 fetch useEffect가 중복 호출되지 않는지
+- [ ] useSearchParams가 DateFilter 안에서 사용되지 않는지 (useState로 관리)
+- [ ] useRef로 초기화 플래그가 안전하게 관리되는지
+
 ### 퀴즈 로직
+- [ ] 한글+발음 표시 → 영어 답 입력 방식인지
 - [ ] 오답 시 wrong_count 즉시 +1
 - [ ] 정답 시 correct_count 즉시 +1
-- [ ] 영→한: 한글 정답 비교 정확
-- [ ] 한→영: 대소문자 무시 동작
-- [ ] 복수 정답 ("사과, 능금") 하나만 맞아도 정답
+- [ ] trim() + toLowerCase() 비교
+- [ ] 복수 정답 (쉼표 구분) 하나만 맞아도 정답
+- [ ] 정답/오답 모두 피드백 카드 표시 (정답 + 뜻 + 정답률)
+- [ ] Enter 키로 다음 퀴즈 이동
+- [ ] dismissFeedback 시 scrollTo(0,0)
 
-### 단어 출제 알고리즘 (server/src/lib/weight.ts → priorityPick)
-- [ ] 1순위: 출제 횟수(wrong_count + correct_count)가 가장 낮은 단어 그룹에서 먼저 출제
-- [ ] 2순위: 같은 출제 횟수 그룹 내에서 오답 가중치(1 + wrongCount * 2) 기반 랜덤 선택
-- [ ] 출제 횟수 0인 단어가 있으면 반드시 그 단어들만 출제되는지 확인
-- [ ] 모든 단어의 출제 횟수가 동일할 때 가중치 기반 랜덤이 정상 동작하는지 확인
-- [ ] 일자별 필터 적용 시에도 출제 알고리즘이 정상 동작하는지 확인
+### 출제 알고리즘 (priorityPick)
+- [ ] 1순위: 출제 횟수(wrong + correct)가 가장 낮은 그룹 우선
+- [ ] 2순위: 같은 그룹 내 가중치(1 + wrongCount * 2) 기반 랜덤
+- [ ] 출제 횟수 0인 단어가 있으면 반드시 그 단어들만 출제
+- [ ] 일자별 필터 적용 시에도 정상 동작
 
-### today_study 화면
-- [ ] today_study.txt → 카드 파싱 정상
-- [ ] 발음, 예문, 해석, 팁 각각 구분 표시
-- [ ] 파일 없을 때 안내 메시지
+### 플래시카드
+- [ ] 3가지 모드 (한글가리기/영어가리기/랜덤)
+- [ ] 정답 공개 시 발음 + 예문 표시
+- [ ] 무한 반복 셔플
+- [ ] 모바일 터치 조작 (카드 탭 = 정답/다음)
+
+### 오늘의 단어
+- [ ] DB에서 직접 조회 (/api/study/words, today_study.txt 미사용)
+- [ ] daily_words 조인으로 복습 단어 포함
+- [ ] /today 페이지에서 "전체" 옵션 숨김, 최신 날짜 자동 선택
+- [ ] 셔플 적용
+
+### 단어 관리 (데스크톱 전용)
+- [ ] 768px 이하에서 홈으로 리다이렉트
+- [ ] 탭 UI (단어 관리 / 접속 로그)
+- [ ] 헤더 클릭 정렬 (틀림/맞음/가중치/출제)
+- [ ] 전체 초기화, 선택 삭제
+
+### 레이아웃 고정값
+- [ ] 데스크톱 네비: fixed, 44px
+- [ ] 모바일 헤더: fixed, 36px
+- [ ] 모바일 탭바: fixed, 56px
+- [ ] Main padding-top: 44px(데스크톱) / 36px(모바일)
+- [ ] Main padding-bottom: 56px(모바일)
 
 ### API ↔ 프론트
-- [ ] 모든 `{ data: T }` → `.data` unwrap
+- [ ] 모든 { data: T } → .data unwrap
 - [ ] snake_case ↔ camelCase 일관성
-- [ ] 에러 응답 `{ error: string }` 처리
+- [ ] KST 시간: toLocaleString("sv-SE", { timeZone: "Asia/Seoul" })
 
-## 입력/출력 프로토콜
-- 출력: `_workspace/qa_report.md`
+### 접속 로그
+- [ ] iPhone/Android/PC 구분
+- [ ] /api/health, /api/access-log 자체 로깅 제외
 
-## 팀 통신 프로토콜
-- 발견 즉시 해당 에이전트에게 수정 요청 (파일:라인 + 수정 방법)
-- 경계면 이슈는 양쪽 모두에게 알림
-
-## 협업
-- 각 모듈 완성 직후 점진적 검증
+## 출력
+- _workspace/qa_report.md

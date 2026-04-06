@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useFlashcard } from '../hooks/useFlashcard';
 import Flashcard from '../components/Flashcard';
@@ -70,6 +70,23 @@ const NavButtons = styled.div`
   }
 `;
 
+const SpeakButton = styled.button`
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-size: 20px;
+  transition: all ${({ theme }) => theme.transitions.fast};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
 const NavButton = styled.button`
   padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing['2xl']}`};
   background: ${({ theme }) => theme.colors.surface};
@@ -84,6 +101,29 @@ const NavButton = styled.button`
     border-color: ${({ theme }) => theme.colors.primary};
     color: ${({ theme }) => theme.colors.primary};
   }
+`;
+
+const SpeakRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  margin-top: ${({ theme }) => theme.spacing.lg};
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+`;
+
+const SpeedSlider = styled.input.attrs({ type: 'range' })`
+  width: 100px;
+  height: 4px;
+  accent-color: ${({ theme }) => theme.colors.primary};
+  cursor: pointer;
+`;
+
+const SpeedLabel = styled.span`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  min-width: 28px;
+  text-align: center;
 `;
 
 const CenterMessage = styled.div`
@@ -106,14 +146,38 @@ const RetryButton = styled.button`
   }
 `;
 
+let speakRate = 0.9;
+
+function speak(text: string, lang: 'en-GB' | 'en-US') {
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang;
+  u.rate = speakRate;
+  const voices = speechSynthesis.getVoices();
+  if (lang === 'en-GB') {
+    const v = voices.find(v => v.name.includes('Daniel') || v.name.includes('Google UK English Male'))
+      || voices.find(v => v.lang.startsWith('en-GB'));
+    if (v) u.voice = v;
+  } else {
+    const v = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English'))
+      || voices.find(v => v.lang.startsWith('en-US'));
+    if (v) u.voice = v;
+  }
+  speechSynthesis.speak(u);
+}
+
 export default function FlashcardPage() {
   const {
     currentWord, revealed, loading, error,
     mode, setMode, reveal, next, prev, fetchWords,
   } = useFlashcard();
 
+  const [rate, setRate] = useState(0.9);
+
   useEffect(() => {
     fetchWords();
+    // 음성 목록 미리 로드
+    speechSynthesis.getVoices();
+    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
   }, []);
 
   const handleDateChange = (date?: string) => {
@@ -134,22 +198,6 @@ export default function FlashcardPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [next, prev, reveal, revealed]);
 
-  if (loading) {
-    return <Container />;
-  }
-
-  if (error) {
-    return (
-      <Container>
-        <PageTitle>플래시카드</PageTitle>
-        <CenterMessage>
-          <p>{error}</p>
-          <RetryButton onClick={() => fetchWords()}>다시 시도</RetryButton>
-        </CenterMessage>
-      </Container>
-    );
-  }
-
   return (
     <Container>
       <PageTitle>플래시카드</PageTitle>
@@ -159,7 +207,12 @@ export default function FlashcardPage() {
         <DateFilter onDateChange={handleDateChange} />
       </Controls>
 
-      {currentWord ? (
+      {error ? (
+        <CenterMessage>
+          <p>{error}</p>
+          <RetryButton onClick={() => fetchWords()}>다시 시도</RetryButton>
+        </CenterMessage>
+      ) : currentWord ? (
         <>
           <CardArea>
             <Flashcard
@@ -170,6 +223,20 @@ export default function FlashcardPage() {
               onNext={next}
             />
           </CardArea>
+          {revealed && (
+            <SpeakRow>
+              <SpeedLabel>{rate.toFixed(1)}x</SpeedLabel>
+              <SpeedSlider
+                min="0.5"
+                max="1.5"
+                step="0.1"
+                value={rate}
+                onChange={e => { const v = Number(e.target.value); setRate(v); speakRate = v; }}
+              />
+              <SpeakButton onClick={() => speak(currentWord.english, 'en-GB')}>🇬🇧</SpeakButton>
+              <SpeakButton onClick={() => speak(currentWord.english, 'en-US')}>🇺🇸</SpeakButton>
+            </SpeakRow>
+          )}
           <NavButtons>
             {revealed ? (
               <NavButton onClick={next}>다음 →</NavButton>
@@ -178,9 +245,7 @@ export default function FlashcardPage() {
             )}
           </NavButtons>
         </>
-      ) : (
-        <CenterMessage>단어가 없습니다.</CenterMessage>
-      )}
+      ) : null}
     </Container>
   );
 }

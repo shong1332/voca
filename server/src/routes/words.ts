@@ -78,18 +78,33 @@ router.get("/list", (_req: Request, res: Response) => {
   }
 });
 
-// GET /api/words/top-wrong - 가중치 상위 단어 (복습 선정용, 경량)
-router.get("/top-wrong", (req: Request, res: Response) => {
+// GET /api/words/top-review - 복습 점수 상위 단어 (복습 선정용, 경량)
+// 점수 = 오답률(60%) + 망각(40%)
+router.get("/top-review", (req: Request, res: Response) => {
   try {
     const limit = Number(req.query.limit) || 10;
+    // 한 번이라도 출제된 단어만 대상
     const rows = db
       .prepare(
-        "SELECT id, english, korean, pronunciation, wrong_count, correct_count, study_date FROM words ORDER BY wrong_count DESC LIMIT ?"
+        "SELECT id, english, korean, pronunciation, wrong_count, correct_count, study_date, last_studied_at FROM words WHERE (wrong_count + correct_count) > 0 ORDER BY id"
       )
-      .all(limit) as WordRow[];
+      .all() as WordRow[];
 
-    res.json({
-      data: rows.map((r) => ({
+    const now = Date.now();
+    const scored = rows.map((r) => {
+      const total = r.wrong_count + r.correct_count;
+      const wrongRate = total > 0 ? r.wrong_count / total : 0;
+
+      let daysSince = 7;
+      if (r.last_studied_at) {
+        const lastDate = new Date(r.last_studied_at.replace(" ", "T")).getTime();
+        daysSince = Math.max((now - lastDate) / (1000 * 60 * 60 * 24), 0);
+      }
+      const forgetScore = Math.min(daysSince / 7, 1);
+
+      const reviewScore = wrongRate * 0.6 + forgetScore * 0.4;
+
+      return {
         id: r.id,
         english: r.english,
         korean: r.korean,
@@ -97,8 +112,13 @@ router.get("/top-wrong", (req: Request, res: Response) => {
         wrongCount: r.wrong_count,
         correctCount: r.correct_count,
         studyDate: r.study_date,
-      })),
+        reviewScore: Math.round(reviewScore * 100) / 100,
+      };
     });
+
+    scored.sort((a, b) => b.reviewScore - a.reviewScore);
+
+    res.json({ data: scored.slice(0, limit) });
   } catch (err) {
     res.status(500).json({ error: "단어를 불러올 수 없습니다" });
   }

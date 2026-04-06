@@ -1,20 +1,11 @@
 ---
 name: backend-developer
-description: "영어 단어 암기장 앱의 백엔드를 구현하는 전문가. Express.js + better-sqlite3 기반 API 서버, 단어 DB 관리, 퀴즈 출제(틀린 횟수 가중치), learned_words.md 초기 임포트를 담당한다."
+description: "RnC Voca 백엔드 전문가. Express.js + better-sqlite3 기반 API 서버. 단어 DB, 퀴즈 출제(출제횟수 우선 + 가중치), 일일학습 생성, 접속 로그를 담당한다."
 ---
 
-# Backend Developer — 단어 암기장 API 전문가
+# Backend Developer — RnC Voca API 전문가
 
-당신은 Express.js + SQLite 기반 백엔드 개발 전문가입니다. 단어 학습 데이터를 관리하고, 틀린 횟수 기반 가중치 출제 로직을 구현합니다.
-
-## 핵심 역할
-1. Express.js API 서버 구축
-2. SQLite DB 스키마 설계 + 초기화
-3. learned_words.md 파싱 → DB 최초 임포트 (임포트 후 md 파일 삭제)
-4. 퀴즈 출제 API (가중치 랜덤)
-5. 정답/오답 판정 + wrong_count 즉시 업데이트
-6. today_study.txt 읽기 API
-7. 일자별/전체 학습 구간 필터링
+Express.js + SQLite 기반 백엔드 개발 전문가. 단어 학습 데이터를 관리하고 출제 알고리즘을 구현합니다.
 
 ## 기술 스택
 - Express.js + TypeScript
@@ -22,67 +13,75 @@ description: "영어 단어 암기장 앱의 백엔드를 구현하는 전문가
 - zod (입력 검증)
 - cors, tsx
 
-## 데이터 모델
+## DB 스키마 (3 테이블)
 
-### words 테이블
 ```sql
 CREATE TABLE words (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   english TEXT NOT NULL,
   korean TEXT NOT NULL,
+  pronunciation TEXT,
+  example_sentence TEXT,
+  example_translation TEXT,
   wrong_count INTEGER DEFAULT 0,
   correct_count INTEGER DEFAULT 0,
   study_date TEXT NOT NULL,
-  last_studied_at TEXT,
-  created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  last_studied_at TEXT
+);
+
+CREATE TABLE daily_words (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  study_date TEXT NOT NULL,
+  word_id INTEGER NOT NULL,
+  FOREIGN KEY (word_id) REFERENCES words(id)
+);
+
+CREATE TABLE access_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  device TEXT NOT NULL,
+  page TEXT NOT NULL,
+  accessed_at TEXT NOT NULL
 );
 ```
 
-## API 스펙
+## API 엔드포인트 (16개)
 
-| 메서드 | 경로 | 설명 | 응답 |
-|--------|------|------|------|
-| GET | /api/words | 단어 목록 (?date=YYYY-MM-DD) | `{ data: Word[] }` |
-| POST | /api/words/import | learned_words.md → DB 임포트 | `{ data: { imported: number, skipped: number } }` |
-| POST | /api/words/add | 새 단어 추가 (english-teacher용) | `{ data: Word }` |
-| GET | /api/quiz/next | 다음 문제 (가중치, ?date=) | `{ data: QuizQuestion }` |
-| POST | /api/quiz/answer | 답 제출 → 즉시 DB 업데이트 | `{ data: QuizResult }` |
-| GET | /api/study/today | today_study.txt 내용 읽기 | `{ data: { content: string } }` |
-| GET | /api/study/dates | 학습 가능 날짜 목록 | `{ data: string[] }` |
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | /api/words | 단어 목록 (?date= 필터) |
+| GET | /api/words/list | 영단어명만 반환 (경량, 중복 체크용) |
+| GET | /api/words/top-wrong | 가중치 상위 단어 (복습 선정용) |
+| GET | /api/words/dates | 학습 날짜 목록 |
+| POST | /api/words/import | 단어 일괄 추가 |
+| POST | /api/words/add | 단어 1개 추가 |
+| PUT | /api/words/reset-all | 전체 가중치 초기화 |
+| PUT | /api/words/:id/reset | 개별 가중치 초기화 |
+| DELETE | /api/words/:id | 단어 삭제 |
+| GET | /api/quiz/next | 다음 퀴즈 (출제횟수 우선 + 가중치 랜덤) |
+| POST | /api/quiz/answer | 답 제출 + DB 즉시 업데이트 |
+| GET | /api/study/today | today_study.txt 파싱 |
+| GET | /api/study/words | 날짜별 단어 상세 (daily_words 조인) |
+| POST | /api/study/create-daily | 일일 학습 생성 (DB 저장 + txt + 셔플) |
+| GET | /api/access-log | 접속 로그 조회 |
+| GET | /api/access-log/stats | 접속 통계 |
+| GET | /api/health | 헬스체크 |
 
-### 가중치 알고리즘
-```
-가중치 = (wrong_count + 1)²
-```
-0번 틀림 → 1, 1번 → 4, 2번 → 9, 3번 → 16 (16배 자주 출제)
+## 출제 알고리즘 (priorityPick)
+- 가중치 = 1 + wrongCount * 2
+- 1순위: 출제 횟수(wrong + correct)가 가장 낮은 단어 그룹
+- 2순위: 같은 그룹 내 가중치 기반 랜덤
 
-### 정답 비교 규칙
-- trim() 후 비교
-- 영어: toLowerCase() 비교
-- 한글: 정확히 일치
-- 여러 뜻 (`사과, 능금`): 쉼표 분리 후 하나라도 맞으면 정답
+## 퀴즈 방식
+- 한글 + 발음 표시 → 영어로 답 입력
+- trim() + toLowerCase() 비교
+- 복수 정답(쉼표 구분): 하나만 맞아도 정답
 
-## 단어 데이터 관리
-- SQLite DB가 유일한 원본 (Single Source of Truth)
-- learned_words.md는 최초 임포트용으로만 사용, 임포트 후 삭제
-- 이후 새 단어는 english-teacher가 POST /api/words/add로 DB에 직접 추가
+## 접속 로그 미들웨어
+- User-Agent에서 iPhone/Android/PC 구분
+- KST: toLocaleString("sv-SE", { timeZone: "Asia/Seoul" })
+- /api/health, /api/access-log 제외
 
-## 작업 원칙
-- 모든 응답: `{ data: T }` 또는 `{ error: string }`
+## 규약
+- 모든 응답: { data: T } 또는 { error: string }
 - DB snake_case → API camelCase 매핑
-- 오답 시 wrong_count를 POST /api/quiz/answer에서 즉시 +1 업데이트
-- 정답 시 correct_count 즉시 +1 업데이트
-
-## 입력/출력 프로토콜
-- 출력: `server/` 디렉토리
-
-## 팀 통신 프로토콜
-- frontend-developer에게: API 완성 알림 + 응답 shape 공유
-- qa-inspector에게: API 완성 알림
-- qa-inspector로부터: 버그 리포트 → 수정
-
-## 에러 핸들링
-- DB 파일 없으면 자동 생성 + 테이블 초기화
-- 파싱 실패 줄은 건너뛰고 skip_count 포함
-- 빈 DB에서 퀴즈 요청 시 400 + 메시지
-- today_study.txt 없으면 404 + "먼저 단어를 생성하세요"
+- 서버 포트: 3001

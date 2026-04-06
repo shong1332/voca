@@ -118,6 +118,7 @@ export default function Flashcard({ word, mode, revealed, onReveal, onNext }: Fl
       {revealed && (
         <>
           <RevealedText>{hiddenText}</RevealedText>
+          {word.pronunciation && <Pronunciation>{word.pronunciation}</Pronunciation>}
           {word.exampleSentence && (
             <>
               <ExampleText>{word.exampleSentence}</ExampleText>

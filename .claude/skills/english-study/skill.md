@@ -21,9 +21,12 @@ RnC Voca
 - 단어 관리는 데스크톱 전용 (모바일 숨김)
 
 ### 2. 오늘의 단어 (/today)
-- POST /api/study/create-daily로 생성된 today_study.txt를 파싱하여 표시
+- DB에서 직접 조회 (/api/study/words?date=, today_study.txt 미사용)
+- daily_words 테이블 조인으로 복습 단어 포함
+- "전체" 옵션 숨김, 최신 날짜 자동 선택
 - 상단: 번호 인덱스 + 단어 미리보기 (2열 그리드)
-- 하단: 각 단어별 상세 카드 (예문, 해석, 문법, 관련 단어)
+- 하단: 각 단어별 상세 카드 (2줄 헤더: 영단어 / 한글+발음)
+- 날짜 변경 시 셔플 적용, 스피너 표시 (최소 0.3초)
 
 ### 3. 플래시카드 학습 (/flashcard)
 - 3가지 모드: 한글 가리기 / 영어 가리기 / 랜덤 (드롭다운)
@@ -178,6 +181,7 @@ CREATE TABLE access_log (
 - Styled Components 사용 (Tailwind 금지)
 - 마우스 사용 최소화 (키보드/터치 우선)
 - 모바일에서 단어 관리 페이지 숨김
-- DateFilter는 URL 쿼리 파라미터(?date=)로 상태 유지
+- DateFilter는 useState로 상태 관리 (useSearchParams 사용 금지 — 무한 루프 원인)
+- /today 페이지에서 "전체" 옵션 숨김, 최신 날짜 자동 선택
 - DB 시드: 빈 DB 시 샘플 단어 10개 자동 삽입
 - 접속 로그: /api/health, /api/access-log 자체는 로깅 제외
