@@ -110,6 +110,10 @@ const SpeakRow = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
   margin-top: ${({ theme }) => theme.spacing.lg};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
+
+  ${({ theme }) => theme.mq.tablet} {
+    display: none;
+  }
 `;
 
 const SpeedSlider = styled.input.attrs({ type: 'range' })`
@@ -149,19 +153,26 @@ const RetryButton = styled.button`
 let speakRate = 0.9;
 
 function speak(text: string, lang: 'en-GB' | 'en-US') {
+  // 모바일에서 이전 발화 중단
+  speechSynthesis.cancel();
+
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
   u.rate = speakRate;
+
   const voices = speechSynthesis.getVoices();
-  if (lang === 'en-GB') {
-    const v = voices.find(v => v.name.includes('Daniel') || v.name.includes('Google UK English Male'))
-      || voices.find(v => v.lang.startsWith('en-GB'));
-    if (v) u.voice = v;
-  } else {
-    const v = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English'))
-      || voices.find(v => v.lang.startsWith('en-US'));
-    if (v) u.voice = v;
+  if (voices.length > 0) {
+    if (lang === 'en-GB') {
+      const v = voices.find(v => v.name.includes('Daniel') || v.name.includes('Google UK English Male'))
+        || voices.find(v => v.lang.startsWith('en-GB'));
+      if (v) u.voice = v;
+    } else {
+      const v = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English'))
+        || voices.find(v => v.lang.startsWith('en-US'));
+      if (v) u.voice = v;
+    }
   }
+
   speechSynthesis.speak(u);
 }
 
@@ -176,8 +187,13 @@ export default function FlashcardPage() {
   useEffect(() => {
     fetchWords();
     // 음성 목록 미리 로드
+    // 음성 목록 미리 로드 + 모바일 TTS 활성화
     speechSynthesis.getVoices();
     speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+    // 모바일에서 빈 발화로 TTS 엔진 깨우기
+    const warmup = new SpeechSynthesisUtterance('');
+    warmup.volume = 0;
+    speechSynthesis.speak(warmup);
   }, []);
 
   const handleDateChange = (date?: string) => {

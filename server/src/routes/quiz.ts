@@ -25,9 +25,20 @@ router.get("/next", (req: Request, res: Response) => {
 
     let words: WordRow[];
     if (date && typeof date === "string") {
-      words = db
-        .prepare("SELECT * FROM words WHERE study_date = ?")
-        .all(date) as WordRow[];
+      // daily_words에 기록이 있으면 조인 (복습 단어 포함)
+      const dailyCount = db
+        .prepare("SELECT COUNT(*) as cnt FROM daily_words WHERE study_date = ?")
+        .get(date) as { cnt: number };
+
+      if (dailyCount.cnt > 0) {
+        words = db
+          .prepare("SELECT w.* FROM daily_words dw JOIN words w ON dw.word_id = w.id WHERE dw.study_date = ?")
+          .all(date) as WordRow[];
+      } else {
+        words = db
+          .prepare("SELECT * FROM words WHERE study_date = ?")
+          .all(date) as WordRow[];
+      }
     } else {
       words = db.prepare("SELECT * FROM words").all() as WordRow[];
     }

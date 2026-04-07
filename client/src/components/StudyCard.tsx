@@ -125,6 +125,10 @@ const SpeakBtn = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.primary};
   }
+
+  ${({ theme }) => theme.mq.tablet} {
+    display: none;
+  }
 `;
 
 const ExampleKorean = styled.p`

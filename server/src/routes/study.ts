@@ -140,10 +140,11 @@ router.post("/create-daily", (req: Request, res: Response) => {
 
     insertMany();
 
-    // 2. 복습 단어 DB에서 조회
+    // 2. 복습 단어 DB에서 조회 + review_count +1
     const reviewWords: WordRow[] = [];
     if (reviewWordIds && reviewWordIds.length > 0) {
       for (const id of reviewWordIds) {
+        db.prepare("UPDATE words SET review_count = review_count + 1 WHERE id = ?").run(id);
         const row = db
           .prepare("SELECT * FROM words WHERE id = ?")
           .get(id) as WordRow | undefined;

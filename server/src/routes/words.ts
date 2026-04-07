@@ -13,6 +13,7 @@ interface WordRow {
   example_translation: string | null;
   wrong_count: number;
   correct_count: number;
+  review_count: number;
   study_date: string;
   last_studied_at: string | null;
 }
@@ -39,9 +40,20 @@ router.get("/", (req: Request, res: Response) => {
 
     let rows: WordRow[];
     if (date && typeof date === "string") {
-      rows = db
-        .prepare("SELECT * FROM words WHERE study_date = ? ORDER BY id")
-        .all(date) as WordRow[];
+      // daily_words에 기록이 있으면 조인 (복습 단어 포함)
+      const dailyCount = db
+        .prepare("SELECT COUNT(*) as cnt FROM daily_words WHERE study_date = ?")
+        .get(date) as { cnt: number };
+
+      if (dailyCount.cnt > 0) {
+        rows = db
+          .prepare("SELECT w.* FROM daily_words dw JOIN words w ON dw.word_id = w.id WHERE dw.study_date = ?")
+          .all(date) as WordRow[];
+      } else {
+        rows = db
+          .prepare("SELECT * FROM words WHERE study_date = ? ORDER BY id")
+          .all(date) as WordRow[];
+      }
     } else {
       rows = db.prepare("SELECT * FROM words ORDER BY id").all() as WordRow[];
     }
@@ -78,47 +90,29 @@ router.get("/list", (_req: Request, res: Response) => {
   }
 });
 
-// GET /api/words/top-review - 복습 점수 상위 단어 (복습 선정용, 경량)
-// 점수 = 오답률(60%) + 망각(40%)
+// GET /api/words/top-review - 복습 선정용 (경량)
+// 1순위: review_count 낮은 순 → 2순위: 가중치(1 + wrongCount * 2) 높은 순
 router.get("/top-review", (req: Request, res: Response) => {
   try {
     const limit = Number(req.query.limit) || 10;
-    // 한 번이라도 출제된 단어만 대상
     const rows = db
       .prepare(
-        "SELECT id, english, korean, pronunciation, wrong_count, correct_count, study_date, last_studied_at FROM words WHERE (wrong_count + correct_count) > 0 ORDER BY id"
+        "SELECT id, english, korean, pronunciation, wrong_count, correct_count, review_count, study_date FROM words ORDER BY review_count ASC, (1 + wrong_count * 2) DESC LIMIT ?"
       )
-      .all() as WordRow[];
+      .all(limit) as WordRow[];
 
-    const now = Date.now();
-    const scored = rows.map((r) => {
-      const total = r.wrong_count + r.correct_count;
-      const wrongRate = total > 0 ? r.wrong_count / total : 0;
-
-      let daysSince = 7;
-      if (r.last_studied_at) {
-        const lastDate = new Date(r.last_studied_at.replace(" ", "T")).getTime();
-        daysSince = Math.max((now - lastDate) / (1000 * 60 * 60 * 24), 0);
-      }
-      const forgetScore = Math.min(daysSince / 7, 1);
-
-      const reviewScore = wrongRate * 0.6 + forgetScore * 0.4;
-
-      return {
+    res.json({
+      data: rows.map((r) => ({
         id: r.id,
         english: r.english,
         korean: r.korean,
         pronunciation: r.pronunciation,
         wrongCount: r.wrong_count,
         correctCount: r.correct_count,
+        reviewCount: r.review_count,
         studyDate: r.study_date,
-        reviewScore: Math.round(reviewScore * 100) / 100,
-      };
+      })),
     });
-
-    scored.sort((a, b) => b.reviewScore - a.reviewScore);
-
-    res.json({ data: scored.slice(0, limit) });
   } catch (err) {
     res.status(500).json({ error: "단어를 불러올 수 없습니다" });
   }
